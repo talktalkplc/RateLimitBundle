@@ -98,7 +98,17 @@ class RateLimitAnnotationListener extends BaseListener
             // Throw an exception if configured.
             if ($this->getParameter('rate_response_exception')) {
                 $class = $this->getParameter('rate_response_exception');
-                throw new $class($this->getParameter('rate_response_message'), $this->getParameter('rate_response_code'));
+                if($class == 'Symfony\Component\HttpKernel\Exception\HttpException'){
+                    throw new $class(
+                        $this->getParameter('rate_response_code'),
+                        $this->getParameter('rate_response_message')
+                    );
+                } else {
+                    throw new $class(
+                        $this->getParameter('rate_response_message'),
+                        $this->getParameter('rate_response_code')
+                    );
+                }
             }
 
             $message = $this->getParameter('rate_response_message');
@@ -157,7 +167,7 @@ class RateLimitAnnotationListener extends BaseListener
         // Let listeners manipulate the key
         $keyEvent = new GenerateKeyEvent($event->getRequest(), $key);
         $this->eventDispatcher->dispatch(RateLimitEvents::GENERATE_KEY, $keyEvent);
-
+        $keyEvent->addToKey($request->getClientIp());
         return $keyEvent->getKey();
     }
 }
